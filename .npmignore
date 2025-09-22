@@ -1,0 +1,44 @@
+# Development files
+.vscode/
+.idea/
+.DS_Store
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build tools and config
+vite.config.js
+vue.config.js
+babel.config.js
+postcss.config.js
+.eslintrc.*
+.prettierrc.*
+vitest.config.*
+tsconfig.json
+
+# Documentation and demo
+docs/
+tests/
+*.md
+!README.md
+CHANGELOG.md
+
+# Deploy scripts
+deploy.sh
+
+# Source maps (optional - you might want to include these)
+*.map
+
+# Environment files
+.env*
+
+# Temporary files
+*.tmp
+*.log

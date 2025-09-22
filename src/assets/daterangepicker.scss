@@ -1,11 +1,8 @@
-@import "variables";
-
-.daterangepicker {
-  @import "ranges";
-  @import "calendar";
-  @import "calendar-time";
-  @import "buttons";
-}
+@use "variables" as *;
+@use "ranges";
+@use "calendar";
+@use "calendar-time";
+@use "buttons";
 
 .vue-daterange-picker {
   *, ::after, ::before {

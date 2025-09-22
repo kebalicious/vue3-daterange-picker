@@ -241,6 +241,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use "sass:string";
+
 th, td {
   padding: 2px;
   background-color: white;
@@ -258,10 +260,10 @@ td.disabled {
 }
 
 @function str-replace($string, $search, $replace: "") {
-  $index: str-index($string, $search);
+  $index: string.index($string, $search);
 
   @if $index {
-    @return str-slice($string, 1, $index - 1) + $replace + str-replace(str-slice($string, $index + str-length($search)), $search, $replace);
+    @return string.slice($string, 1, $index - 1) + $replace + str-replace(string.slice($string, $index + string.length($search)), $search, $replace);
   }
 
   @return $string;

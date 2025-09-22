@@ -819,7 +819,7 @@
 </script>
 
 <style lang="scss">
-  @import '../assets/daterangepicker.scss';
+  @use '../assets/daterangepicker.scss';
 </style>
 
 <style lang="scss" scoped>
