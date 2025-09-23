@@ -5,55 +5,59 @@ on:
     branches: [ main ]
     paths:
       - 'src/**'
-      - 'package.json'
-      - '!package.json'  # Exclude package.json to avoid infinite loops
+      # Jangan senaraikan package.json supaya bump tidak trigger diri sendiri
 
 jobs:
   version-bump:
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip version]')"
-    
+    if: "!contains(github.event.head_commit.message, '[skip version]')"
+
+    permissions:
+      contents: write
+      # (Perlu untuk push tag & commit)
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        registry-url: 'https://registry.npmjs.org'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Configure Git
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+      - name: Determine version bump type
+        id: version-type
+        run: |
+          COMMIT_MSG="$(git log --format=%B -n 1)"
+          if echo "$COMMIT_MSG" | grep -qE "\[major\]|\bBREAKING CHANGE\b"; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+          elif echo "$COMMIT_MSG" | grep -qE "\[minor\]|\bfeat\b|\bfeature\b"; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+          else
+            echo "bump=patch" >> $GITHUB_OUTPUT
+          fi
 
-    - name: Determine version bump type
-      id: version-type
-      run: |
-        # Check commit messages for version bump indicators
-        if git log --format=%B -n 1 | grep -qE "\[major\]|\bBREAKING CHANGE\b"; then
-          echo "bump=major" >> $GITHUB_OUTPUT
-        elif git log --format=%B -n 1 | grep -qE "\[minor\]|\bfeat\b|\bfeature\b"; then
-          echo "bump=minor" >> $GITHUB_OUTPUT
-        else
-          echo "bump=patch" >> $GITHUB_OUTPUT
-        fi
+      - name: Bump version
+        id: bump
+        run: |
+          npm version ${{ steps.version-type.outputs.bump }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-    - name: Bump version
-      run: |
-        npm version ${{ steps.version-type.outputs.bump }} --no-git-tag-version
-        NEW_VERSION=$(node -p "require('./package.json').version")
-        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      - name: Commit version bump
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add package.json package-lock.json || true
+          git commit -m "chore: bump version to v${{ steps.bump.outputs.version }}"
+          git push
 
-    - name: Commit version bump
-      run: |
-        git add package.json
-        git commit -m "chore: bump version to v$NEW_VERSION [skip ci]"
-        git push
+      - name: Create and push tag
+        run: |
+          git tag -a "v${{ steps.bump.outputs.version }}" -m "Release v${{ steps.bump.outputs.version }}"
+          git push origin "v${{ steps.bump.outputs.version }}"
