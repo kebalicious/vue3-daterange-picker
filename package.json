@@ -1,6 +1,6 @@
 {
   "name": "@kebalicious/vue3-daterange-picker",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A modern Vue 3 date range picker component with Sass support",
   "author": "kebalicious",
   "main": "dist/vue3-daterange-picker.umd.js",
