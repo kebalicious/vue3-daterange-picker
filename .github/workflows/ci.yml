@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
@@ -6,74 +6,128 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  test:
+  build-and-test:
+    name: Tests / Lint / Build (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node: [20, 22]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+            node-version: ${{ matrix.node }}
+            cache: npm
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run linter
-      run: npm run lint --if-present
+      - name: Lint
+        run: |
+          if npm run | grep -q "^  lint"; then
+            npm run lint
+          else
+            echo "No lint script defined, skipping."
+          fi
 
-    - name: Run tests
-      run: npm test --if-present
+      - name: Run tests
+        run: |
+          if npm run | grep -q "^  test"; then
+            npm test
+          else
+            echo "No test script defined, skipping."
+          fi
 
-    - name: Build package
-      run: npm run build
+      - name: Build package
+        run: npm run build
 
-    - name: Test package install
-      run: |
-        npm pack
-        npm install -g ./kebalicious-vue3-daterange-picker-*.tgz
+      - name: Pack & test install
+        run: |
+          PKG_TARBALL="$(npm pack --json | jq -r '.[0].filename')"
+          echo "Generated tarball: $PKG_TARBALL"
+          mkdir -p tmp-install
+          cp package.json tmp-install/
+          cd tmp-install
+          npm init -y >/dev/null 2>&1
+          npm install "../$PKG_TARBALL"
+          echo "Smoke import test:"
+          node -e "const rootPkg=require('../package.json'); require(rootPkg.name); console.log('Import OK for', rootPkg.name);"
+        shell: bash
 
-  build-check:
+      - name: Upload dist artifacts (matrix)
+        if: matrix.node == '22'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-node${{ matrix.node }}
+          path: dist/**
+          if-no-files-found: error
+          retention-days: 7
+
+  validate-build-output:
+    name: Validate Built Files & Bundle Meta
     runs-on: ubuntu-latest
+    needs: build-and-test
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
 
-    - name: Check package.json validity
-      run: npm pkg fix --dry-run
+      - name: Verify expected files
+        run: |
+          echo "Listing dist:"
+          ls -la dist || (echo "dist directory missing" && exit 1)
+          REQUIRED_FILES=(
+            "vue3-daterange-picker.es.js"
+            "vue3-daterange-picker.umd.js"
+            "style.css"
+          )
+            for f in "${REQUIRED_FILES[@]}"; do
+              if [ ! -f "dist/$f" ]; then
+                echo "Missing dist/$f"
+                MISSING=1
+              fi
+            done
+            if [ "$MISSING" = "1" ]; then
+              echo "One or more expected files are missing."
+              exit 1
+            fi
+            echo "All required files present."
 
-    - name: Build and verify output
-      run: |
-        npm run build
-        ls -la dist/
-        echo "Checking if all required files are built..."
-        test -f dist/vue3-daterange-picker.es.js
-        test -f dist/vue3-daterange-picker.umd.js
-        test -f dist/style.css
+      - name: Show bundle sizes
+        run: du -h dist/* | sort -h
 
-    - name: Check bundle size
-      run: |
-        echo "Bundle sizes:"
-        du -h dist/*
-        
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-files
-        path: dist/
+      - name: Check package.json integrity
+        run: |
+          echo "Declared export/map fields (if any):"
+          jq '{name, version, main, module, types, exports}' package.json || true
+
+      - name: Upload dist (validated)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-validated
+          path: dist/**
+          if-no-files-found: error
+          retention-days: 7
