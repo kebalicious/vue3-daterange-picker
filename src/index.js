@@ -27,8 +27,13 @@ const plugin = {
   install
 }
 
-// Default export is install function with component attached
-export default plugin
+// Default export is the component itself (supports both import styles)
+// This allows: import DateRangePicker from '@kebalicious/vue3-daterange-picker'
+// And also: import { DateRangePicker } from '@kebalicious/vue3-daterange-picker'
+export default DateRangePicker
+
+// Also export the plugin for Vue.use()
+export { plugin as install }
 
 // It's possible to expose named exports when writing components that can
 // also be used as directives, etc. - eg. import { RollupDemoDirective } from 'rollup-demo';
