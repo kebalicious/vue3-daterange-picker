@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { shallowMount } from '@vue/test-utils'
-import Calendar from '../../src/components/Calendar'
+import Calendar from '../../src/components/Calendar.vue'
 
 describe('Calendar.vue', () => {
   let calendar = shallowMount(Calendar, {

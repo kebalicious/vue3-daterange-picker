@@ -45,7 +45,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   },
   "peerDependencies": {
     "vue": "^3.0.0"
@@ -57,6 +57,7 @@
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.36.0",
+    "jsdom": "^27.0.0",
     "sass": "^1.78.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.3",
@@ -71,7 +72,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "type-check": "vue-tsc --noEmit",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "lint": "eslint . --fix",
     "prepublishOnly": "npm run build",
     "version:patch": "npm version patch",
     "version:minor": "npm version minor",

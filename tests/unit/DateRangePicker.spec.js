@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import DateRangePicker from '@/components/DateRangePicker'
+import DateRangePicker from '../../src/components/DateRangePicker.vue'
 import dateUtil from '../../src/components/date_util/native'
 import { mount } from '@vue/test-utils'
 
