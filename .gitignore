@@ -10,6 +10,9 @@ dist/
 build/
 *.tgz
 
+# Large files
+*.deb
+
 # Environment variables
 .env
 .env.local
