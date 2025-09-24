@@ -59,31 +59,50 @@ jobs:
           PKG_TARBALL=$(npm pack --json | jq -r '.[0].filename')
           echo "Generated tarball: $PKG_TARBALL"
 
-          # Verify tarball contents
+          # Verify tarball contents (FIXED VERSION - no broken pipe!)
           echo "Tarball contents:"
-          tar -tvf "$PKG_TARBALL"
-          tar -tvf "$PKG_TARBALL" | grep -q "package/dist/vue3-daterange-picker.umd.js" || { echo "Missing dist/vue3-daterange-picker.umd.js in tarball"; exit 1; }
-          tar -tvf "$PKG_TARBALL" | grep -q "package/dist/vue3-daterange-picker.es.js" || { echo "Missing dist/vue3-daterange-picker.es.js in tarball"; exit 1; }
-          tar -tvf "$PKG_TARBALL" | grep -q "package/dist/style.css" || { echo "Missing dist/style.css in tarball"; exit 1; }
-          tar -tvf "$PKG_TARBALL" | grep -q "package/package.json" || { echo "Missing package.json in tarball"; exit 1; }
-          echo "Tarball contents verified."
+          tar -tf "$PKG_TARBALL"
+
+          echo ""
+          echo "Verifying required files..."
+          
+          # Store contents to avoid broken pipe issues with pipefail
+          CONTENTS=$(tar -tf "$PKG_TARBALL" 2>/dev/null)
+          
+          # Check each file safely
+          echo "$CONTENTS" | grep -q "package/dist/vue3-daterange-picker.umd.js" && echo "✓ Found vue3-daterange-picker.umd.js" || { echo "✗ Missing vue3-daterange-picker.umd.js"; exit 1; }
+          echo "$CONTENTS" | grep -q "package/dist/vue3-daterange-picker.es.js" && echo "✓ Found vue3-daterange-picker.es.js" || { echo "✗ Missing vue3-daterange-picker.es.js"; exit 1; }
+          echo "$CONTENTS" | grep -q "package/dist/style.css" && echo "✓ Found style.css" || { echo "✗ Missing style.css"; exit 1; }
+          echo "$CONTENTS" | grep -q "package/package.json" && echo "✓ Found package.json" || { echo "✗ Missing package.json"; exit 1; }
+          
+          echo "Tarball contents verified!"
 
           # Set up temporary install directory
           mkdir -p tmp-install
           cd tmp-install
 
           # Initialize and install the tarball
-          npm init -y >/dev/null
-          npm install "../$PKG_TARBALL"
+          npm init -y >/dev/null 2>&1
+          npm install "../$PKG_TARBALL" >/dev/null 2>&1
 
-          # Debug: List installed files and package.json
+          # Verify installation
           echo "Installed files in node_modules/@kebalicious/vue3-daterange-picker:"
-          ls -la node_modules/@kebalicious/vue3-daterange-picker || echo "Directory not found"
-          echo "Installed package.json:"
-          cat node_modules/@kebalicious/vue3-daterange-picker/package.json || echo "package.json not found"
+          if [ -d "node_modules/@kebalicious/vue3-daterange-picker" ]; then
+            ls -la node_modules/@kebalicious/vue3-daterange-picker
+            echo ""
+            echo "Dist directory:"
+            ls -la node_modules/@kebalicious/vue3-daterange-picker/dist/
+          else
+            echo "Directory not found"
+            exit 1
+          fi
 
           # Test import (using scoped package name)
-          node -e "const pkg = require('@kebalicious/vue3-daterange-picker'); console.log('Imported successfully:', pkg);"
+          echo ""
+          echo "Testing package import..."
+          node -e "const pkg = require('@kebalicious/vue3-daterange-picker'); console.log('✓ Import successful! Type:', typeof pkg);"
+          
+          echo "🎉 All package verification tests passed!"
         shell: bash
 
       - name: Upload Artifacts
