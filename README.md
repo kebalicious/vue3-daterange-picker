@@ -190,6 +190,7 @@ npm run test
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Acknowledgements
 
-Based on the original [vue2-daterange-picker](https://github.com/Innologica/vue2-daterange-picker) by Innologica.
+Based on the original [vue2-daterange-picker](https://github.com/Innologica/vue2-daterange-picker) by Innologica, and [vue3-daterange-picker
+](https://github.com/joshuaeasy/vue3-daterange-picker.git).
