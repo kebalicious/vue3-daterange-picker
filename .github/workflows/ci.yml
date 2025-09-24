@@ -3,7 +3,7 @@ name: CI and Publish
 on:
   push:
     branches: [main, develop]
-    tags: ['v*']
+    tags: ["v*"]
   pull_request:
     branches: [main]
 
@@ -46,13 +46,26 @@ jobs:
 
       - name: Verify Package
         run: |
+          # Create and pack the tarball
           PKG_TARBALL=$(npm pack --json | jq -r '.[0].filename')
+          echo "Generated tarball: $PKG_TARBALL"
+
+          # Set up temporary install directory
           mkdir -p tmp-install
-          cp package.json tmp-install/
           cd tmp-install
+
+          # Initialize a new package.json and install the tarball
           npm init -y >/dev/null
           npm install "../$PKG_TARBALL"
-          node -e "const pkg = require('../package.json'); require(pkg.name); console.log('Imported:', pkg.name);"
+
+          # Debug: List installed files and package.json
+          echo "Installed files:"
+          ls -la node_modules/vue3-daterange-picker/dist || echo "dist directory not found"
+          cat node_modules/vue3-daterange-picker/package.json || echo "package.json not found"
+
+          # Test import using the package's main entry point
+          node -e "const pkg = require('vue3-daterange-picker'); console.log('Imported successfully:', pkg);"
+        shell: bash
 
       - name: Upload Artifacts
         if: matrix.node == '22'
