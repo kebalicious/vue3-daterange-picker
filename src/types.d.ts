@@ -1,7 +1,7 @@
 import { App } from 'vue'
 
 declare module 'vue3-daterange-picker' {
-  interface DateRangePickerOptions {
+  export interface DateRangePickerOptions {
     startDate?: Date | string
     endDate?: Date | string
     minDate?: Date | string
@@ -16,7 +16,7 @@ declare module 'vue3-daterange-picker' {
     autoApply?: boolean
     autoUpdateInput?: boolean
     linkedCalendars?: boolean
-    isInvalidDate?: (date: Date) => boolean
+    isInvalidDate?: (dateToCheck: Date) => boolean
     locale?: {
       direction?: string
       format?: string
@@ -56,7 +56,7 @@ declare module 'vue3-daterange-picker' {
   }
 
   declare const DateRangePicker: {
-    install(app: App): void
+    install(vueApp: App): void
   }
 
   export default DateRangePicker
